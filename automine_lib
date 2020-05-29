@@ -1,0 +1,79 @@
+# automine default functions
+       
+# Define Text Colors
+black=$(tput setaf 0 2> /dev/null)
+BLACK=$(tput setaf 0 2> /dev/null)$(tput bold 2> /dev/null)
+red=$(tput setaf 1 2> /dev/null)
+RED=$(tput setaf 1 2> /dev/null)$(tput bold 2> /dev/null)
+green=$(tput setaf 2 2> /dev/null)
+GREEN=$(tput setaf 2 2> /dev/null)$(tput bold 2> /dev/null)
+yellow=$(tput setaf 3 2> /dev/null)
+YELLOW=$(tput setaf 3 2> /dev/null)$(tput bold 2> /dev/null)
+blue=$(tput setaf 4 2> /dev/null)
+BLUE=$(tput setaf 4 2> /dev/null)$(tput bold 2> /dev/null)
+magenta=$(tput setaf 5 2> /dev/null)
+MAGENTA=$(tput setaf 5 2> /dev/null)$(tput bold 2> /dev/null)
+cyan=$(tput setaf 6 2> /dev/null)
+CYAN=$(tput setaf 6 2> /dev/null)$(tput bold 2> /dev/null)
+white=$(tput setaf 7 2> /dev/null)
+WHITE=$(tput setaf 7 2> /dev/null)$(tput bold 2> /dev/null)
+NC=$(tput sgr0 2> /dev/null) # No Color
+
+com_colortest()
+{
+  # This prints out a color test pattern for reference
+  echo "Color Chart:"
+  echo "${BLACK}BLACK${NC} ${black}black${NC}"
+  echo "${RED}RED${NC} ${red}red${NC}"
+  echo "${GREEN}GREEN${NC} ${green}green${NC}"
+  echo "${YELLOW}YELLOW${NC} ${yellow}yellow${NC}"
+  echo "${BLUE}BLUE${NC} ${blue}blue${NC}"
+  echo "${MAGENTA}MAGENTA${NC} ${magenta}magenta${NC}"
+  echo "${CYAN}CYAN${NC} ${cyan}cyan${NC}"
+  echo "${WHITE}WHITE${NC} ${white}white${NC}"
+}
+
+com_error()
+{
+  # Used for error messages and a clean exit if requested
+  # This function expects fist argument to contain text to be displayed
+  # Optional second argument is an exit code to exit with if desired.
+  echo -e "${red}Error:${NC} ${1}" >&2
+  if [ "$2" != "" ];then
+    com_debug "com_error exiting with ${2}"
+    exit $2
+  fi
+}
+
+com_warning()
+{
+  # Used for warning messages and a clean exit if requested
+  # This function expects fist argument to contain text to be displayed
+  # Optional second argument is an exit code to exit with if desired.
+  echo -e "${yellow}Warning:${NC} ${1}"
+  if [ "$2" != "" ];then
+    com_debug "com_warning exiting with ${2}"
+    exit $2
+  fi
+}
+
+com_info()
+{
+  # Used for info messages and a clean exit if requested.
+  # This function expects fist argument to contain text to be displayed
+  # Optional second argument is an exit code to exit with if desired.
+  echo -e "${green}Info:${NC} ${1}"
+  if [ "$2" != "" ];then
+    com_debug "com_info exiting with ${2}"
+    exit $2
+  fi
+}
+
+com_debug()
+{
+  # Used for debug messages, print to stderr.
+  # This function expects fist argument to contain text to be displayed
+  if [ "$debug" == "1" ];then
+    echo -e "${cyan}Debug:${NC} ${1}" >&2
+  fi
+}

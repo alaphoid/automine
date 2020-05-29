@@ -1,0 +1,19 @@
+# Automine config
+#
+# These valuse can and should be adjusted to fit your needs
+
+# This is the dir that contains your server directory
+MINECRAFT_HOME="/mnt/data/minecraft"
+
+# This is where automine will download the server files to
+DOWNLOADS="${MINECRAFT_HOME}/downloads"
+
+# This is where the backups will go
+BACKUPS="/home/jons/minecraft_backups"
+
+# Delete backups old than this many days
+BACKUP_AGE=7
+
+# Enable automine debugging
+debug=0
+
