@@ -9,7 +9,7 @@ To install Automine simply clone the Automine repo to /opt/automine, then create
 
 `cd /opt/`
 
-`git clone automine`
+`git clone git@github.com:alaphoid/automine.git`
 
 `ln -s /opt/automine/automine.sh /usr/bin/automine`
 
