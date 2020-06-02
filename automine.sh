@@ -10,23 +10,18 @@
 # https://jamesachambers.com/minecraft-bedrock-edition-ubuntu-dedicated-server-guide/
 
 #LOAD COMMON LIBRARIES ###################################
-SCRIPT=$(readlink -f $0)
-libpath="`dirname $SCRIPT`" # Get this dir from
-source $libpath/config
-source $libpath/automine_lib
+AUTOMINE_HOME="/opt/automine" # Get this dir from
+
+source $AUTOMINE_HOME/config
+source $AUTOMINE_HOME/automine_lib
 
 ###########################################################
 
 # DECLARE VARIABLES########################################
 APPNAME="Automatic Minecraft Server Manager"
-APPVER="1.0.0-1"
-APPDATE="May 27, 2020"
+APPVER="1.0.0-2"
+APPDATE="June 2, 2020"
 EXE="automine"
-
-#MINECRAFT_HOME="/mnt/data/minecraft"
-#DOWNLOADS="${MINECRAFT_HOME}/downloads"
-#BACKUPS="/home/jons/minecraft_backups"
-#BACKUP_AGE=7
 
 args=("$@")
 #debug=0
@@ -38,9 +33,6 @@ USERNAME=`whoami`
 
 if [ ! -d $DOWNLOADS ];then mkdir -p $DOWNLOADS;fi
 if [ ! -d $BACKUPS ];then mkdir -p $BACKUPS;fi
-
-
-
 
 # DEFINE FUNCTIONS ########################################
 trapabort()
@@ -242,6 +234,7 @@ bds_start(){
 bds_stop(){
   # Function to stop the server
   com_debug "Running bds_stop"
+  com_debug "Countdown mins: $COUNTDOWN"
   if [ -z "$SERVICE" ] && [ $SYSD -eq 1 ];then
     # Use systemd to start the service
     case $1 in
@@ -258,6 +251,7 @@ bds_stop(){
       fi
     else
       if [ $COUNTDOWN -gt 0 ];then
+        com_debug "Countdown greater then 0: $COUNTDOWN"
         while [ $COUNTDOWN -gt 0 ]; do
           if [ $COUNTDOWN -eq 1 ]; then
             echo "Waiting for 60 seconds ..."
@@ -274,6 +268,7 @@ bds_stop(){
             screen -Rd $SERVERNAME -X stuff "say $type server in $COUNTDOWN minutes...$(printf '\r')"
             sleep 60;
           fi
+          com_debug "Decrementing countdown"
           ((COUNTDOWN--))
         done
         echo
@@ -367,12 +362,14 @@ if [ "$CMD" == "null" ];then
   help "Missing argument";exit 1
 fi
 
-systemctl status minecraft-$SERVERNAME >/dev/null && SYSD=1 || SYSD=0
-
 # Echo header
 if [ -z "$SERVICE" ];then
   echo;echo "${YELLOW}$APPNAME - $APPVER ${NC}";echo
 fi
+
+systemctl status minecraft-$SERVERNAME >/dev/null && SYSD=1 || SYSD=0
+
+com_debug "SYSD: $SYSD"
 
 # Check SERVERNAME is valid
 if [ ! -d "${MINECRAFT_HOME}/${SERVERNAME}" ];then
@@ -406,7 +403,7 @@ case $CMD in
     bds_stop restart
     # Run backup function
     backup_server
-    
+    cd $MINECRAFT_HOME
     # Rename current servername with a date
     if ! mv $SERVERNAME ${SERVERNAME}_${TIME};then com_error "There was an error backing up $SERVERNAME" 1;fi
     # Copy latest ver to SERVERNAME
@@ -525,6 +522,11 @@ if [ -z "$SERVICE" ];then echo;fi
 exit
 
 # CHANGE LOG ##################################################################
+# June 2, 2020 - v1.0.0-2
+# - Default install location: /opt/automine/
+# - Added some debug output
+# - Static paths for libraries and config
+#
 # May 27, 2020 - v1.0.0-1
 # - Ready for use
 # - Added service/cronjob/sudoers setup
