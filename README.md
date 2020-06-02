@@ -8,7 +8,9 @@ Automine expects to be in /opt/automine/, to change this you need modify the aut
 To install Automine simply clone the Automine repo to /opt/automine, then create a symlink to the automine.sh file like so:
 
 `cd /opt/`
+
 `git clone automine`
+
 `ln -s /opt/automine/automine.sh /usr/bin/automine`
 
 Run 'automine --help' for more information.
