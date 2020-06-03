@@ -10,8 +10,11 @@
 # https://jamesachambers.com/minecraft-bedrock-edition-ubuntu-dedicated-server-guide/
 
 #LOAD COMMON LIBRARIES ###################################
-AUTOMINE_HOME="/opt/automine" # Get this dir from
+# Get script dir, make it AUTOMINE_HOME
+SCRIPT=$(readlink -f $0)
+AUTOMINE_HOME="`dirname $SCRIPT`"
 
+# Load the config and common stuff library
 source $AUTOMINE_HOME/config
 source $AUTOMINE_HOME/automine_lib
 
@@ -19,8 +22,8 @@ source $AUTOMINE_HOME/automine_lib
 
 # DECLARE VARIABLES########################################
 APPNAME="Automatic Minecraft Server Manager"
-APPVER="1.0.0-2"
-APPDATE="June 2, 2020"
+APPVER="1.0.0-3"
+APPDATE="June 3, 2020"
 EXE="automine"
 
 args=("$@")
@@ -376,7 +379,7 @@ if [ ! -d "${MINECRAFT_HOME}/${SERVERNAME}" ];then
   com_error "Could not find server: $SERVERNAME" 1
 fi
 
-TIME=`date +%Y.%m.%d_%k-%M`
+TIME=`date +%Y.%m.%d_%H-%M`
 
 case $CMD in
   start)
@@ -522,6 +525,10 @@ if [ -z "$SERVICE" ];then echo;fi
 exit
 
 # CHANGE LOG ##################################################################
+# June 3, 2020 - v1.0.0-3
+# - Reverted to dynamic dir
+# - Fixed bad option in date command
+#
 # June 2, 2020 - v1.0.0-2
 # - Default install location: /opt/automine/
 # - Added some debug output
