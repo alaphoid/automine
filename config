@@ -8,6 +8,9 @@ MINECRAFT_HOME="/mnt/data/minecraft"
 # This is where automine will download the server files to
 DOWNLOADS="${MINECRAFT_HOME}/downloads"
 
+# This is where a copy of the default base config files will be stored
+BASE_CFG="${MINECRAFT_HOME}/baseconfig"
+
 # This is where the backups will go
 BACKUPS="/home/jons/minecraft_backups"
 

@@ -34,9 +34,6 @@ SERVER_WEBPAGE="https://minecraft.net/en-us/download/server/bedrock/"
 BDS_URL="https://minecraft.azureedge.net/bin-linux"
 USERNAME=`whoami`
 
-if [ ! -d $DOWNLOADS ];then mkdir -p $DOWNLOADS;fi
-if [ ! -d $BACKUPS ];then mkdir -p $BACKUPS;fi
-
 # DEFINE FUNCTIONS ########################################
 trapabort()
 {
@@ -212,7 +209,7 @@ bds_start(){
   if [ -z "$SERVICE" ] && [ $SYSD -eq 1 ];then
     # Use systemd to start the service
     com_info "Starting Minecraft server ($SERVERNAME)"
-    sudo systemctl start minecraft-$SERVERNAME
+    sudo /usr/bin/systemctl start minecraft-$SERVERNAME
   else
     # Function to start the server
     # Check if server is already started
@@ -277,7 +274,7 @@ bds_stop(){
         echo
       fi
       com_info "Stopping Minecraft server ($SERVERNAME)"
-      sudo systemctl stop minecraft-$SERVERNAME
+      sudo /usr/bin/systemctl stop minecraft-$SERVERNAME
     fi
   else
      #Stop the server
@@ -323,6 +320,9 @@ download_bds(){
   else
     com_info "Creating directory: ${MINECRAFT_HOME}/downloads/bedrock-server-${MINECRAFT_VER}"
     mkdir ${DOWNLOADS}/bedrock-server-${MINECRAFT_VER}
+    if [ $? -ne 0 ];then
+      com_error "Couldn't create ${MINECRAFT_HOME}/downloads/bedrock-server-${MINECRAFT_VER}" 1
+    fi
     cd ${DOWNLOADS}/bedrock-server-${MINECRAFT_VER}
 
   # Download the server archive if necessary
@@ -333,7 +333,15 @@ download_bds(){
       unzip -q bedrock-server-${MINECRAFT_VER}.zip
       rm -f bedrock-server-${MINECRAFT_VER}.zip
       # Remove unneeded stuff
-      rm -f server.properties whitelist.json permissions.json bedrock_server_realms.debug
+      rm -f ${BASE_CFG}/*
+      mkdir ${BASE_CFG}/worlds
+
+      base_configs="server.properties whitelist.json permissions.json"
+      for config in $base_configs;do
+        mv $config ${BASE_CFG}/
+      done
+      rm -f bedrock_server_realms.debug
+      cp -R worlds/* ${BASE_CFG}/worlds/
       rm -rf worlds/*
     fi
   fi
@@ -370,13 +378,50 @@ if [ -z "$SERVICE" ];then
   echo;echo "${YELLOW}$APPNAME - $APPVER ${NC}";echo
 fi
 
-systemctl status minecraft-$SERVERNAME >/dev/null && SYSD=1 || SYSD=0
+# Create downloads dir if it doesn't exist
+if [ ! -d $DOWNLOADS ];then
+  mkdir -p $DOWNLOADS 2> /dev/null || com_error "Failed to create $DOWNLOADS, check permissions" 1
+fi
+
+if [ ! -d $BACKUPS ];then
+  mkdir -p $BACKUPS 2> /dev/null || com_error "Failed to create $BACKUPS, check permissions" 1
+fi
+
+if [ ! -d $BASE_CFG ];then
+  mkdir -p $BASE_CFG 2> /dev/null || com_error "Failed to create $BASE_CFG, check permissions" 1
+fi
+
+/usr/bin/systemctl status minecraft-$SERVERNAME >/dev/null && SYSD=1 || SYSD=0
 
 com_debug "SYSD: $SYSD"
 
 # Check SERVERNAME is valid
-if [ ! -d "${MINECRAFT_HOME}/${SERVERNAME}" ];then
-  com_error "Could not find server: $SERVERNAME" 1
+if [ ! -f "${MINECRAFT_HOME}/${SERVERNAME}/bedrock_server" ];then
+  read -p "Specified server $SERVERNAME doesn't exist yet, create it? (y/N): " ans
+  echo
+  case $ans in
+    Y|y)
+      com_info "Creating server $SERVERNAME"
+      com_info "Checking for the latest version of Minecraft Bedrock server..."
+      MINECRAFT_VER=`get_latest_bds_ver`
+      com_info "Latest version: $MINECRAFT_VER"
+      # Download the latest version
+      download_bds
+      if [ -d "${MINECRAFT_HOME}/${SERVERNAME}/worlds" ];then
+        com_error "Possibly detected worlds in the target dir, aborting" 1
+      fi
+      rm -rf ${MINECRAFT_HOME}/${SERVERNAME}
+      cp -R ${DOWNLOADS}/bedrock-server-${MINECRAFT_VER} ${MINECRAFT_HOME}/${SERVERNAME} || com_error "There was an error setting up the server, check permissions" 1
+      cp -R ${BASE_CFG}/* ${MINECRAFT_HOME}/${SERVERNAME}/ || com_error "Failed copying base configs into $SERVERNAME, check permissions" 1
+      # Update world name in server.properties
+      sed -i "s/server-name=Dedicated Server/server-name=${SERVERNAME}/g" ${MINECRAFT_HOME}/${SERVERNAME}/server.properties
+      sed -i "s/level-name=Bedrock level/level-name=${SERVERNAME}/g" ${MINECRAFT_HOME}/${SERVERNAME}/server.properties
+
+      ;;
+    *)
+      com_error "Could not find server: $SERVERNAME" 1
+      ;;
+  esac
 fi
 
 TIME=`date +%Y.%m.%d_%H-%M`
@@ -450,8 +495,11 @@ WantedBy=multi-user.target
 EOF
     sudo cp /tmp/minecraft-${SERVERNAME}.service /etc/systemd/system/minecraft-${SERVERNAME}.service
     rm -f /tmp/minecraft-${SERVERNAME}.service
-    sudo systemctl daemon-reload
-    sudo systemctl enable minecraft-${SERVERNAME}
+    sudo /usr/bin/systemctl daemon-reload
+    sudo /usr/bin/systemctl enable minecraft-${SERVERNAME}
+    if [ ! -f "/usr/bin/automine" ];then
+      sudo ln -s $SCRIPT /usr/bin/automine
+    fi
     if [ $? -eq 0 ];then
       com_info "Service 'minecraft-${SERVERNAME}' is installed and enabled"
       com_info "Run 'systemctl start minecraft-${SERVERNAME}' to start"
@@ -462,10 +510,10 @@ EOF
     # Add sudoers permissions for user to control the service
 
 cat << EOF > /tmp/sudoers_minecraft-${SERVERNAME}
-${USERNAME} ALL=NOPASSWD: /bin/systemctl start $SERVERNAME
-${USERNAME} ALL=NOPASSWD: /bin/systemctl stop $SERVERNAME
-${USERNAME} ALL=NOPASSWD: /bin/systemctl restart $SERVERNAME
-${USERNAME} ALL=NOPASSWD: /bin/systemctl status $SERVERNAME
+${USERNAME} ALL=NOPASSWD: /usr/bin/systemctl start minecraft-$SERVERNAME
+${USERNAME} ALL=NOPASSWD: /usr/bin/systemctl stop minecraft-$SERVERNAME
+${USERNAME} ALL=NOPASSWD: /usr/bin/systemctl restart minecraft-$SERVERNAME
+${USERNAME} ALL=NOPASSWD: /usr/bin/systemctl status minecraft-$SERVERNAME
 EOF
 
     sudo cp /tmp/sudoers_minecraft-${SERVERNAME} /etc/sudoers.d/minecraft-${SERVERNAME}
@@ -474,13 +522,15 @@ EOF
 
     # Setup nightly update job
     crontab -l > /tmp/crontab_minecraft-${SERVERNAME}
-
+    grep "Update minecraft server: ${SERVERNAME}" /tmp/crontab_minecraft-${SERVERNAME} > /dev/null
+    if [ $? -ne 0 ];then
 cat << EOF >> /tmp/crontab_minecraft-${SERVERNAME}
 # Update minecraft server: ${SERVERNAME}
 30 4 * * * /usr/bin/automine --update ${SERVERNAME} 1
 EOF
 
-    crontab < /tmp/crontab_minecraft-${SERVERNAME}
+      crontab < /tmp/crontab_minecraft-${SERVERNAME}
+    fi
     rm -f /tmp/crontab_minecraft-${SERVERNAME}
     com_info "Added user crontab entry to update minecraft-${SERVERNAME}"
     ;;
@@ -490,13 +540,13 @@ EOF
     if [ ! -f "/etc/systemd/system/minecraft-${SERVERNAME}.service" ];then
       com_error "Service config does not exist, can't auto remove" 1
     fi
-    sudo systemctl stop minecraft-${SERVERNAME}
+    sudo /usr/bin/systemctl stop minecraft-${SERVERNAME}
     if [ $? -ne 0 ];then
       com_error "Problem stopping the service" 1
     fi
-    sudo systemctl disable minecraft-${SERVERNAME}
+    sudo /usr/bin/systemctl disable minecraft-${SERVERNAME}
     sudo rm -f /etc/systemd/system/minecraft-${SERVERNAME}.service
-    sudo systemctl daemon-reload
+    sudo /usr/bin/systemctl daemon-reload
     com_info "Service minecraft-${SERVERNAME} is removed"
     
     # Remove sudoers config
@@ -509,6 +559,8 @@ EOF
     crontab < /tmp/crontab_minecraft-${SERVERNAME}_edit
     rm -f /tmp/crontab_minecraft-${SERVERNAME}*
     com_info "Removed user crontab entry to update minecraft-${SERVERNAME}"
+    echo
+    com_info "Server dir was left alone: ${MINECRAFT_HOME}/${SERVERNAME}"
     ;;
   download)
     com_info "Checking for the latest version of Minecraft Bedrock server..."
@@ -525,6 +577,9 @@ if [ -z "$SERVICE" ];then echo;fi
 exit
 
 # CHANGE LOG ##################################################################
+# June 12, 2020 - v1.0.0-4
+# - Numerous improvements to auto service adding
+#
 # June 3, 2020 - v1.0.0-3
 # - Reverted to dynamic dir
 # - Fixed bad option in date command
