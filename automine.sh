@@ -22,8 +22,8 @@ source $AUTOMINE_HOME/automine_lib
 
 # DECLARE VARIABLES########################################
 APPNAME="Automatic Minecraft Server Manager"
-APPVER="1.0.0-3"
-APPDATE="June 3, 2020"
+APPVER="1.0.0-4"
+APPDATE="June 12, 2020"
 EXE="automine"
 
 args=("$@")
