@@ -22,8 +22,8 @@ source $AUTOMINE_HOME/automine_lib
 
 # DECLARE VARIABLES########################################
 APPNAME="Automatic Minecraft Server Manager"
-APPVER="1.0.0-4"
-APPDATE="June 12, 2020"
+APPVER="1.0.0-5"
+APPDATE="April 9, 2021"
 EXE="automine"
 
 args=("$@")
@@ -578,6 +578,9 @@ if [ -z "$SERVICE" ];then echo;fi
 exit
 
 # CHANGE LOG ##################################################################
+# April 9, 2021 - v1.0.0-5
+# - Add setting of bedrock_server file to executable.
+#
 # June 12, 2020 - v1.0.0-4
 # - Numerous improvements to auto service adding
 #
