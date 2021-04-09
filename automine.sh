@@ -467,6 +467,7 @@ case $CMD in
     if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/permissions.json ./;then com_error "Error restoring permissions.json" 1;fi
     com_info "Restoring worlds"
     if ! cp -R ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/worlds ./;then com_error "Error restoring worlds" 1;fi
+    chmod 755 bedrock_server
 
     cd $MINECRAFT_HOME
     rm -rf ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}
