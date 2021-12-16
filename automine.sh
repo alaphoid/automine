@@ -22,15 +22,15 @@ source $AUTOMINE_HOME/automine_lib
 
 # DECLARE VARIABLES########################################
 APPNAME="Automatic Minecraft Server Manager"
-APPVER="1.0.0-5"
-APPDATE="April 9, 2021"
+APPVER="1.0.0-6"
+APPDATE="December 16, 2021"
 EXE="automine"
 
 args=("$@")
 #debug=0
 
 CMD=null
-SERVER_WEBPAGE="https://minecraft.net/en-us/download/server/bedrock/"
+SERVER_WEBPAGE="https://www.minecraft.net/en-us/download/server/bedrock"
 BDS_URL="https://minecraft.azureedge.net/bin-linux"
 USERNAME=`whoami`
 
@@ -69,7 +69,7 @@ ${WHITE}  --start [servername]${NC}
 ${WHITE}  --stop [servername] [minutes]${NC}
         Stop the Minecraft Server, minutes are optional.
 ${WHITE}  --restart [servername] [minutes]${NC}
-        Restart the Miinecraft Server, minutes are optional.
+        Restart the Minecraft Server, minutes are optional.
 ${WHITE}  --backup [servername] [minutes]${NC}
         This will take a complete backup of the server.
 ${WHITE}  --update [servername] [minutes]${NC}
@@ -90,17 +90,18 @@ ${WHITE}  --version${NC}
         Display version information.
 
 ${WHITE}Examples:${NC}
-To start a Minecraft Server
-$EXE --start pangea
+To start a Minecraft Server (myserver)
+$EXE --start myserver
 
-Setup service and update job for pangea
-$EXE --service add pangea
+Setup service and update task for myserver
+$EXE --service add myserver
 
-Update the Minecraft server with 2 minutes shutdown warning
-$EXE --update pangea 2
+Update the Minecraft server (myserver) with 2 minutes shutdown warning
+$EXE --update myserver 2
 
 
-Report bugs to <jon@jnjschneider.com>
+Report bugs on GitHub page:
+https://github.com/alaphoid/automine
 
 EOF
 }
@@ -208,16 +209,20 @@ bds_start(){
   # Does systemd config exist for this SERVERNAME
   if [ -z "$SERVICE" ] && [ $SYSD -eq 1 ];then
     # Use systemd to start the service
-    com_info "Starting Minecraft server ($SERVERNAME)"
+    com_info "Starting Minecraft systemd service: minecraft-${SERVERNAME}"
     sudo /usr/bin/systemctl start minecraft-$SERVERNAME
+    echo
+    echo "  ${yellow}To view window type 'screen -r $SERVERNAME'"
+    echo "  To minimize the window and let the server run in the background, press"
+    echo "  Ctrl+a then Ctrl+d.  Lookup docs on GNU Screen for more details.${NC}"
   else
     # Function to start the server
     # Check if server is already started
     if screen -list | grep -q "$SERVERNAME"; then
-      com_info "Server is already started ($SERVERNAME)"
+      com_info "Server is already started in screen: ($SERVERNAME)"
     else
       cd ${MINECRAFT_HOME}/${SERVERNAME}
-      com_info "Starting Minecraft server ($SERVERNAME)"
+      com_info "Starting Minecraft server in screen only: ($SERVERNAME)"
       if [ -z "$SERVICE" ];then
         echo
         echo "  ${yellow}To view window type 'screen -r $SERVERNAME'"
@@ -273,13 +278,13 @@ bds_stop(){
         done
         echo
       fi
-      com_info "Stopping Minecraft server ($SERVERNAME)"
+      com_info "Stopping Minecraft systemd service: minecraft-${SERVERNAME}"
       sudo /usr/bin/systemctl stop minecraft-$SERVERNAME
     fi
   else
      #Stop the server
 
-    com_info "Stopping Minecraft server ($SERVERNAME)"
+    com_info "Stopping Minecraft server in screen only: $SERVERNAME"
     screen -Rd $SERVERNAME -X stuff "say Stopping server...$(printf '\r')"
     screen -Rd $SERVERNAME -X stuff "stop$(printf '\r')"
 
@@ -304,15 +309,19 @@ bds_stop(){
 get_latest_bds_ver(){
   com_debug "Running get_latest_bds_ver"
   # Retrieve latest version of Minecraft Bedrock dedicated server
-  wget -q -O ${DOWNLOADS}/version.html $SERVER_WEBPAGE
+  #wget -q -O ${DOWNLOADS}/version.html $SERVER_WEBPAGE
+  curl -s -XGET "$SERVER_WEBPAGE" -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36' > ${DOWNLOADS}/version.html
   local downloadURL=`grep -o 'https://minecraft.azureedge.net/bin-linux/[^"]*' ${DOWNLOADS}/version.html`
+  com_debug "downloadURL=$downloadURL"
   local downloadFile=`echo "$downloadURL" | sed 's#.*/##'`
+  com_debug "downloadFile=$downloadFile"
   local MINECRAFT_VER=`echo $downloadFile | sed -e 's/bedrock-server-//g' -e 's/.zip//g'`
-  rm -f ${DOWNLOADS}/version.html
+  #rm -f ${DOWNLOADS}/version.html
   echo $MINECRAFT_VER
 }
 
 download_bds(){
+  # This function downloads the latest version and updates the saved copy of the base configs
   com_debug "Running download_bds"
   # Check if a minecraft dir foor this version already esists, create it if not
   if [ -d "${DOWNLOADS}/bedrock-server-${MINECRAFT_VER}" ];then
@@ -329,11 +338,12 @@ download_bds(){
     if [ ! -f "bedrock-server-${MINECRAFT_VER}.zip" ];then
       com_info "Downloading bedrock-server-${MINECRAFT_VER}.zip"
       wget -q --show-progress https://minecraft.azureedge.net/bin-linux/bedrock-server-${MINECRAFT_VER}.zip
+      if [ $? -ne 0 ];then com_error "There was a problem downloading bedrock-server-${MINECRAFT_VER}.zip" 1;fi
       com_info "Unpacking files";echo
       unzip -q bedrock-server-${MINECRAFT_VER}.zip
       rm -f bedrock-server-${MINECRAFT_VER}.zip
       # Remove unneeded stuff
-      rm -f ${BASE_CFG}/*
+      rm -rf ${BASE_CFG}/*
       mkdir ${BASE_CFG}/worlds
 
       base_configs="server.properties whitelist.json permissions.json"
@@ -391,7 +401,10 @@ if [ ! -d $BASE_CFG ];then
   mkdir -p $BASE_CFG 2> /dev/null || com_error "Failed to create $BASE_CFG, check permissions" 1
 fi
 
-/usr/bin/systemctl status minecraft-$SERVERNAME >/dev/null && SYSD=1 || SYSD=0
+#/usr/bin/systemctl status minecraft-$SERVERNAME >/dev/null && SYSD=1 || SYSD=0
+/usr/bin/systemctl status minecraft-$SERVERNAME >/dev/null
+EC=$?
+if [ $EC -eq 0 ] || [ $EC -eq 3 ];then SYSD=1;else SYSD=0;fi 
 
 com_debug "SYSD: $SYSD"
 
@@ -578,6 +591,10 @@ if [ -z "$SERVICE" ];then echo;fi
 exit
 
 # CHANGE LOG ##################################################################
+# December 16, 2021 - v1.0.0-6
+# - Corrected an issue with downloading newer versions no longer working.
+# - A few other various small tweaks.
+#
 # April 9, 2021 - v1.0.0-5
 # - Add setting of bedrock_server file to executable.
 #

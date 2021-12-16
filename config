@@ -1,6 +1,6 @@
 # Automine config
 #
-# These valuse can and should be adjusted to fit your needs
+# These values can and should be adjusted to fit your needs
 
 # This is the dir that contains your server directory
 MINECRAFT_HOME="/mnt/data/minecraft"
@@ -12,7 +12,7 @@ DOWNLOADS="${MINECRAFT_HOME}/downloads"
 BASE_CFG="${MINECRAFT_HOME}/baseconfig"
 
 # This is where the backups will go
-BACKUPS="/home/jons/minecraft_backups"
+BACKUPS="/home/minecraft/minecraft_backups"
 
 # Delete backups old than this many days
 BACKUP_AGE=7
