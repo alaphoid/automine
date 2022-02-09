@@ -22,8 +22,8 @@ source $AUTOMINE_HOME/automine_lib
 
 # DECLARE VARIABLES########################################
 APPNAME="Automatic Minecraft Server Manager"
-APPVER="1.0.0-6"
-APPDATE="December 16, 2021"
+APPVER="1.0.0-7"
+APPDATE="February 9, 2022"
 EXE="automine"
 
 args=("$@")
@@ -346,7 +346,7 @@ download_bds(){
       rm -rf ${BASE_CFG}/*
       mkdir ${BASE_CFG}/worlds
 
-      base_configs="server.properties whitelist.json permissions.json"
+      base_configs="server.properties allowlist.json whitelist.json permissions.json"
       for config in $base_configs;do
         mv $config ${BASE_CFG}/
       done
@@ -476,6 +476,7 @@ case $CMD in
     # Copy World and configs
     com_info "Restoring configs"
     if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/server.properties ./;then com_error "Error restoring server.properties" 1;fi
+    if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/allowlist.json ./;then com_error "Error restoring allowlist.json" 1;fi
     if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/whitelist.json ./;then com_error "Error restoring whitelist.json" 1;fi
     if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/permissions.json ./;then com_error "Error restoring permissions.json" 1;fi
     com_info "Restoring worlds"
@@ -591,6 +592,10 @@ if [ -z "$SERVICE" ];then echo;fi
 exit
 
 # CHANGE LOG ##################################################################
+# February 9, 2022 - v1.0.0-7
+# - whitelist.json is being replaced by allowlist.json, added support to backup
+#   the new file.
+#
 # December 16, 2021 - v1.0.0-6
 # - Corrected an issue with downloading newer versions no longer working.
 # - A few other various small tweaks.
