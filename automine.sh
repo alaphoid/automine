@@ -346,7 +346,7 @@ download_bds(){
       rm -rf ${BASE_CFG}/*
       mkdir ${BASE_CFG}/worlds
 
-      base_configs="server.properties allowlist.json whitelist.json permissions.json"
+      base_configs="server.properties allowlist.json whitelist.json allowlist.json permissions.json"
       for config in $base_configs;do
         mv $config ${BASE_CFG}/
       done
