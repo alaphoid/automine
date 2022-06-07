@@ -346,7 +346,7 @@ download_bds(){
       rm -rf ${BASE_CFG}/*
       mkdir ${BASE_CFG}/worlds
 
-      base_configs="server.properties allowlist.json whitelist.json allowlist.json permissions.json"
+      base_configs="server.properties allowlist.json whitelist.json permissions.json"
       for config in $base_configs;do
         mv $config ${BASE_CFG}/
       done
@@ -476,8 +476,8 @@ case $CMD in
     # Copy World and configs
     com_info "Restoring configs"
     if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/server.properties ./;then com_error "Error restoring server.properties" 1;fi
-    if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/allowlist.json ./;then com_error "Error restoring allowlist.json" 1;fi
-    if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/whitelist.json ./;then com_error "Error restoring whitelist.json" 1;fi
+    if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/allowlist.json ./;then com_error "Error restoring allowlist.json";fi
+    if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/whitelist.json ./;then com_error "Error restoring whitelist.json";fi
     if ! cp ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/permissions.json ./;then com_error "Error restoring permissions.json" 1;fi
     com_info "Restoring worlds"
     if ! cp -R ${MINECRAFT_HOME}/${SERVERNAME}_${TIME}/worlds ./;then com_error "Error restoring worlds" 1;fi
